@@ -33,7 +33,7 @@ def dropdown_options(process):
     if process == 'black-scholes':
         options_dd = {model_specification: model_specification for model_specification in ['no-jump','merton']}
     elif process == 'heston':
-        options_dd = {model_specification: model_specification for model_specification in ['no-jump']}
+        options_dd = {model_specification: model_specification for model_specification in ['no-jump','bates']}
     value = options_dd[list(options_dd.keys())[0]]
     return options_dd, value
 
@@ -52,8 +52,8 @@ def simulation(process, model_specification):
         stock_sim = model(process=process)
         if model_specification == 'no-jump':
             df = stock_sim.create_path(model_specification, 0.5, 1, 0.5, 0.2)
-        else:
-            df = stock_sim.create_path(model_specification, 0.5, 1, 0.5, 0.2, 0.1, 1)
+        elif model_specification == 'bates':
+            df = stock_sim.create_path(model_specification, 0.5, 1, 0.5, 0.2, 1, 0.5, 0.2)
     else:
         pass
     fig = px.line(df, title='Monte Carlo simulation', labels={'value':'Prices','index':'Time'})
@@ -64,4 +64,4 @@ def simulation(process, model_specification):
 ########################################################################################################################
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True,port=1111)

@@ -63,17 +63,19 @@ class model(object):
             if model_specification == 'no-jump':
                 path[:, 1:] = np.exp((self.r - (vol_t[:, 1:] ** 0.5) / 2) * self.dt + vol_t[:, 1:]**0.5 \
                                      * self.dt ** (0.5) * np.random.normal(size=(self.m, self.n - 1)))
-            elif model_specification == 'jump':
+            elif model_specification == 'bates':
                 """
-                args = (rho, k, eta, theta, l_poisson)
+                args = (rho, k, eta, theta, l_poisson, mu_j, vol_j)
                 """
-                jump_t = np.zeros(shape=(self.m,self.n))
-                l_poisson = args[4]
+                Nt, Jt = np.zeros(shape=(self.m, self.n)), np.zeros(shape=(self.m, self.n))
+                Nt[:, 1:] = np.random.poisson(lam=self.dt * args[4], size=(self.m, self.n - 1))
+                Jt[:, 1:] = np.exp(np.random.normal(loc=np.log(args[4]+1)-args[5]**2/2, scale=args[5]**2,\
+                                             size=(self.m, self.n - 1)))-1
 
-                path[:, 1:] = np.exp((self.r - (vol_t[:, 1:] ** 0.5) / 2) * self.dt + vol_t[:, 1:] \
+                path[:, 1:] = np.exp((self.r - ((vol_t[:, 1:] ** 0.5) / 2) - args[4]*args[5]) * self.dt + vol_t[:, 1:] \
                                      ** 0.5 * self.dt ** (0.5) * np.random.normal(size=(self.m, self.n - 1)))
 
-                jump_t[:, 1:] = np.random.poisson(l_poisson*self.dt, size=(self.m,self.n-1))
+                jump_t = Nt * Jt
                 path = path + jump_t
             else:
                 pass
