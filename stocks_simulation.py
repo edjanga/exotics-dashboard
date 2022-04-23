@@ -21,7 +21,6 @@ class model(object):
         self.vol = vol
 
     def create_path(self, model_specification='no-jump', *args):
-        np.random.seed(123)
         path = np.zeros(shape=(self.m, self.n))
         path[:, 0] = self.S0
 
@@ -47,8 +46,8 @@ class model(object):
         elif self.process == 'heston':
             cov = np.array([[1, args[0]], [args[0], 1]])
             """
-                            args = (rho, k, eta, theta)
-                            """
+            args = (rho, k, eta, theta)
+            """
             """
             cov --> cholesky decomposition --> chol*Mx2 N(0,1)
             """
