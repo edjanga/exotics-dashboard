@@ -1,8 +1,6 @@
 from stocks_simulation import model
-from dash import Dash, dcc, html, Input, Output, State, MATCH, ALL
+from dash import Dash, dcc, html, Input, Output, State, ALL
 import plotly.express as px
-import pdb
-
 
 
 ########################################################################################################################
