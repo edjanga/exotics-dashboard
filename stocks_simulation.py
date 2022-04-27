@@ -10,7 +10,7 @@ class model(object):
         - Heston
     """
 
-    def __init__(self, process = 'black-scholes', r = .05, vol = .2, S0 = 100):
+    def __init__(self, process, r, S0):
 
         self.process = process
         self.m = 10
@@ -18,14 +18,13 @@ class model(object):
         self.dt = 1/self.n
         self.S0 = S0
         self.r = r
-        self.vol = vol
 
     def create_path(self, model_specification='no-jump', *args):
         path = np.zeros(shape=(self.m, self.n))
         path[:, 0] = self.S0
 
         if self.process == 'black-scholes':
-            path[:, 1:] = np.exp((self.r - (self.vol ** 2) / 2) * self.dt + self.vol * self.dt ** (0.5) * \
+            path[:, 1:] = np.exp((self.r - (args[0] ** 2) / 2) * self.dt + args[0] * self.dt ** (0.5) * \
                                  np.random.normal(size=(self.m, self.n - 1)))
             if model_specification == 'no-jump':
                 """
@@ -35,11 +34,11 @@ class model(object):
             elif model_specification == 'merton':
                 """
                 log(St/St-1) = (r-vol2/2) * dt + vol * dt**(0.5) * Wt + JtNt
-                args = (lambda, mu_j, vol_j)
+                args = (vol,lambda, mu_j, vol_j)
                 """
                 Nt, Jt = np.zeros(shape=(self.m,self.n)), np.zeros(shape=(self.m,self.n))
-                Nt[:, 1:] = np.random.poisson(lam=self.dt*args[0],size=(self.m,self.n-1))
-                Jt[:, 1:] = np.random.normal(loc=args[1],scale=args[2], size=(self.m, self.n - 1))
+                Nt[:, 1:] = np.random.poisson(lam=self.dt*args[1],size=(self.m,self.n-1))
+                Jt[:, 1:] = np.random.normal(loc=args[2],scale=args[3], size=(self.m, self.n - 1))
                 jump_t = Nt*Jt
                 path = path+jump_t
 
@@ -52,7 +51,7 @@ class model(object):
             cov --> cholesky decomposition --> chol*Mx2 N(0,1)
             """
             vol_t = np.zeros(shape=(self.m, self.n))
-            vol_t[:, 0] = self.vol
+            vol_t[:, 0] = args[0]
             for i in range(1, self.n):
                 W = np.random.multivariate_normal(mean=[0, 0], cov=cov, size=self.m)
                 Wt, W_tilde_t = W[:, 0], W[:, -1]

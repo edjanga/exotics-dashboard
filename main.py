@@ -1,5 +1,5 @@
 from stocks_simulation import model
-from dash import Dash, dcc, html, Input, Output
+from dash import Dash, dcc, html, Input, Output, State, MATCH, ALL
 import plotly.express as px
 import pdb
 
@@ -13,116 +13,132 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = Dash(__name__, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 server = app.server
-app.layout = html.Div([html.H1('Simulation of stock paths', style={'text-align': 'center', 'font-family':'verdana'}),\
-                       html.H5('Generate stock paths according to different stochastic processes',\
-                               style={'text-align': 'center','font-family':'verdana'}),\
-                       dcc.Markdown('Select a process: ', style={'text-align': 'left', 'font-family': 'verdana'}),\
-                       dcc.RadioItems(id='process',options=[{'label': x, 'value': x} for x in\
-                                                            ['black-scholes', 'heston']],\
-                                      value='black-scholes',style={'text-align': 'left', 'font-family': 'verdana',\
-                                                                   'display': 'inline-block'},\
-                                      inputStyle={'margin': '10px'}),\
-                       html.Br(),\
-                       dcc.Dropdown(multi=False, style={'text-align': 'left', 'font-family': 'verdana'},\
+app.layout = html.Div([html.H1('Simulation of stock paths', style={'text-align': 'center', 'font-family': 'verdana'}), \
+                       html.H5('Generate stock paths according to different stochastic processes', \
+                               style={'text-align': 'center', 'font-family': 'verdana'}), \
+                       dcc.Markdown('Select a process: ', style={'text-align': 'left', 'font-family': 'verdana'}), \
+                       html.Div( \
+                           dcc.RadioItems(id='process', options=[{'label': x, 'value': x} for x in \
+                                                                 ['black-scholes', 'heston']], \
+                                          value='black-scholes', style={'text-align': 'left', 'font-family': 'verdana', \
+                                                                        'display': 'inline-block'}, \
+                                          inputStyle={'margin': '10'}), style={'display': 'inline-block'}), \
+                       dcc.Dropdown(multi=False, style={'text-align': 'left', 'font-family': 'verdana'}, \
                                     id='model_specification'), \
-                       html.Br(),\
-                       html.Div(id='model_parameters'),\
-                       html.Br(),\
-                       dcc.Graph(id='stock_path')])
+                       html.Br(), \
+                       html.Div(id='main_container')])
 
 
 @app.callback(
-    [Output('model_specification', 'options'),\
-     Output('model_specification', 'value')],\
+    [Output('model_specification', 'options'), \
+     Output('model_specification', 'value')], \
         Input('process', 'value'))
 def dropdown_options(process):
     if process == 'black-scholes':
-        options_dd = {model_specification: model_specification for model_specification in ['no-jump','merton']}
+        options_dd = {model_specification: model_specification for model_specification in ['no-jump', 'merton']}
     elif process == 'heston':
-        options_dd = {model_specification: model_specification for model_specification in ['no-jump','bates']}
+        options_dd = {model_specification: model_specification for model_specification in ['no-jump', 'bates']}
     value = options_dd[list(options_dd.keys())[0]]
     return options_dd, value
 
+
 @app.callback(
-    Output('model_parameters','children'),
-    [Input('process','value'),\
-     Input('model_specification','value')]
+    Output('main_container', 'children'), \
+        [Input('process', 'value'), \
+         Input('model_specification', 'value')], \
+        State('main_container', 'children')
 )
-def parameters_ls(process,model_specification):
-    params_ls = [dcc.Input(id='S0', placeholder='Insert S0', min=0.00, step=1, size='md', type='number',debounce=True),\
-                 dcc.Input(id='r', min=0.00, step=.01, size='md', placeholder='Insert r',type='number',debounce=True)]
+def generate_paths(process, model_specification, div_children):
+    div_children = []
+    params_ls = [dcc.Input(id={'type': 'input', 'index': 0}, placeholder='Insert S0', min=0.00, step=1, size='md', \
+                           type='number', value=0, debounce=True), \
+                 dcc.Input(id={'type': 'input', 'index': 1}, min=0.00, step=.01, size='md', placeholder='Insert r', \
+                           type='number', value=0, debounce=True)]
     if process == 'black-scholes':
-        process_param_ls = [dcc.Input(id='vol',min=0.00,step=.01,size='md',placeholder='Insert vol',type='number',\
-                                       debounce=True)]
-        if model_specification == 'no-jump':
-            add_param_ls = []
-        elif model_specification == 'merton':
-            add_param_ls = [dcc.Input(id='jump_intensity',placeholder='Insert jump_intensity',min=0.00,step=1,\
-                                      size='md',type='number',debounce=True),\
-                            dcc.Input(id='mu_j', min=0.00, step=.1, size='md',\
-                                      placeholder='Insert mu_j',type='number',debounce=True), \
-                            dcc.Input(id='vol_j',min=0.00,step=.1,size='md',placeholder='Insert vol_j',\
-                                      type='number',debounce=True,)]
+        process_param_ls = [dcc.Input(id={'type': 'input', 'index': 2}, min=0.00, step=.01, size='md', \
+                                      placeholder='Insert vol', type='number', debounce=True, value=0)]
+
+        if model_specification == 'merton':
+            model_specification_param_ls = [dcc.Input(id={'type': 'input', 'index': 3}, \
+                                                      placeholder='Insert jump_intensity',
+                                                      min=0.00, step=1, size='40', type='number', debounce=True, \
+                                                      value=0), \
+                                            dcc.Input(id={'type': 'input', 'index': 4}, min=0.00, step=.1, size='md', \
+                                                      placeholder='Insert mu_j', type='number', \
+                                                      debounce=True, value=0), \
+                                            dcc.Input(id={'type': 'input', 'index': 5}, min=0.00, step=.1, size='md', \
+                                                      placeholder='Insert vol_j', \
+                                                      type='number', debounce=True, value=0)]
+        else:
+            model_specification_param_ls = []
     elif process == 'heston':
-        process_param_ls = [dcc.Input(id='speed', placeholder='Insert k', min=0.00, step=.1, \
-                                  size='md', type='number', debounce=True), \
-                            dcc.Input(id='mean', min=0.00, step=.1, size='md', \
-                                      placeholder='Insert mean of vol', type='number', debounce=True), \
-                            dcc.Input(id='vol_of_vol', min=0.00, step=.1, size='md', placeholder='Insert vol of vol', \
-                                      type='number', debounce=True), \
-                            dcc.Input(id='corr', min=0.00, step=.1, size='md', placeholder='Insert corr', \
-                                      type='number', debounce=True)]
-        if model_specification == 'no-jump':
-            add_param_ls = []
-        elif model_specification == 'bates':
-            add_param_ls = [dcc.Input(id='jump_intensity', placeholder='Insert jump_intensity', min=0.00, step=1, \
-                                      size='40', type='number', debounce=True), \
-                            dcc.Input(id='mu_j', min=0.00, step=.1, size='md', \
-                                      placeholder='Insert mu_j', type='number', debounce=True), \
-                            dcc.Input(id='vol_j', min=0.00, step=.1, size='md', placeholder='Insert vol_j', \
-                                      type='number', debounce=True)]
-    else:
-        pass
-    return params_ls+process_param_ls+add_param_ls
+        process_param_ls = [dcc.Input(id={'type': 'input', 'index': 2}, placeholder='Insert k', min=0.00, step=.1, \
+                                      size='md', type='number', debounce=True, value=0), \
+                            dcc.Input(id={'type': 'input', 'index': 3}, min=0.00, step=.1, size='md', \
+                                      placeholder='Insert mean of vol', type='number', debounce=True, value=0), \
+                            dcc.Input(id={'type': 'input', 'index': 4}, min=0.00, step=.1, size='md', \
+                                      placeholder='Insert vol of vol', \
+                                      type='number', debounce=True, value=0), \
+                            dcc.Input(id={'type': 'input', 'index': 5}, min=0.00, step=.1, \
+                                      size='md', placeholder='Insert corr', type='number', debounce=True, value=0)]
+
+        if model_specification == 'bates':
+            model_specification_param_ls = [dcc.Input(id={'type': 'input', 'index': 6}, \
+                                                      placeholder='Insert jump_intensity',
+                                                      min=0.00, step=1, size='40', type='number', debounce=True, \
+                                                      value=0), \
+                                            dcc.Input(id={'type': 'input', 'index': 7}, min=0.00, step=.1, size='md', \
+                                                      placeholder='Insert mu_j', type='number', \
+                                                      debounce=True, value=0), \
+                                            dcc.Input(id={'type': 'input', 'index': 8}, min=0.00, step=.1, size='md', \
+                                                      placeholder='Insert vol_j', \
+                                                      type='number', debounce=True, value=0)]
+        else:
+            model_specification_param_ls = []
+    div_children.append(html.Div(params_ls + process_param_ls + model_specification_param_ls))
+    ####################################################################################################################
+    ## Display figure
+    ####################################################################################################################
+    graph_comp = dcc.Graph(id='simulation', figure={})
+    div_children.append(graph_comp)
+    return div_children
+
 
 @app.callback(
-   Output('stock_path', 'figure'),
-   [Input('process', 'value'),
-    Input('model_specification', 'value'),\
-    Input('S0', 'value'),\
-    Input('r', 'value'),\
-    Input('vol', 'value')])
-def simulation(process,model_specification,S0,r,vol):
-
-    if (S0 == None)|(r == None)|(vol == None):
-        S0 = 100
-        r = 0.05
-        vol = 0.2
-        stock_sim = model(process=process,r=r,vol=vol,S0=S0)
-    else:
-        stock_sim = model(process=process,r=r,vol=vol,S0=S0)
-
-    df = stock_sim.create_path(model_specification)
+    Output('simulation', 'figure'),
+    [Input('process', 'value'), \
+     Input('model_specification', 'value'), \
+     Input(component_id={'type': 'input', 'index': ALL}, component_property='value')],
+    State('simulation', 'figure')
+)
+def update_graph(process, model_specification, *args):
+    stock_sim = model(process=process, S0=args[0][0], r=args[0][1])
     if process == 'black-scholes':
         if model_specification == 'no-jump':
-            df = stock_sim.create_path(model_specification)
+            df = stock_sim.create_path(model_specification, args[0][2])
         elif model_specification == 'merton':
-            df = stock_sim.create_path(model_specification,1,0.5,0.2)
-        fig = px.line(df, title='Monte Carlo simulation', labels={'value': 'Prices', 'index': 'Time'})
-        return fig
+            try:
+                df = stock_sim.create_path(model_specification, args[0][2], args[0][3], args[0][4], args[0][5])
+            except IndexError:
+                df = stock_sim.create_path(model_specification, args[0][2], 0, 0, 0)
     elif process == 'heston':
-        stock_sim = model(process=process)
         if model_specification == 'no-jump':
-            df = stock_sim.create_path(model_specification,0.5,1,0.5,0.2)
+            try:
+                df = stock_sim.create_path(model_specification, args[0][2], args[0][3], args[0][4], args[0][5])
+            except IndexError:
+                df = stock_sim.create_path(model_specification, args[0][2], 0, 0, 0)
         elif model_specification == 'bates':
-            df = stock_sim.create_path(model_specification,0.5,1,0.5,0.2,1,0.5,0.2)
+            try:
+                df = stock_sim.create_path(model_specification, args[0][2], args[0][3], args[0][4], \
+                                           args[0][5], args[0][6], args[0][7])
+            except IndexError:
+                df = stock_sim.create_path(model_specification, args[0][2], 0, 0, 0, 0, 0)
     fig = px.line(df, title='Monte Carlo simulation', labels={'value': 'Prices', 'index': 'Time'})
     return fig
-
 
 ########################################################################################################################
 ## Main
 ########################################################################################################################
 
 if __name__ == '__main__':
-    app.run_server(debug=True,port=1111)
+    app.run_server(debug=False)
